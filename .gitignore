@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+build/
+.next/
+coverage/
+**/dist/
+**/build/
+**/.next/
+**/coverage/
+
+# Runtime logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.run-logs/
+**/.run-logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Caches
+.cache/
+.parcel-cache/
+**/.cache/
+**/.parcel-cache/
+
+# Service-specific generated files
+services/user-service/prisma/dev.db
+services/user-service/prisma/*.db
+services/user-service/prisma/*.db-journal
+
+# Docker / misc
+*.pid
+*.seed
+*.out
+*.err

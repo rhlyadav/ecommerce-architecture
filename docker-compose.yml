@@ -1,0 +1,139 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ecommerce-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongodb:
+    image: mongo:7
+    container_name: ecommerce-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+    ports:
+      - "${MONGO_PORT}:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: ecommerce-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  user-service:
+    build:
+      context: ./services/user-service
+    container_name: user-service
+    restart: unless-stopped
+    environment:
+      PORT: 4001
+      DATABASE_URL: mysql://user:userpass@mysql:3306/userdb
+    ports:
+      - "4001:4001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ecommerce-net
+
+  product-service:
+    build:
+      context: ./services/product-service
+    container_name: product-service
+    restart: unless-stopped
+    environment:
+      PORT: 4002
+      MONGO_URL: mongodb://mongodb:27017/productdb
+    ports:
+      - "4002:4002"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ecommerce-net
+
+  host-app:
+    build:
+      context: ./frontend/host-app
+    container_name: host-app
+    restart: unless-stopped
+    environment:
+      USER_API_URL: http://localhost:8080/api/users
+      PRODUCT_API_URL: http://localhost:8080/api/products
+    ports:
+      - "3000:3000"
+    depends_on:
+      - user-service
+      - product-service
+      - remote-app
+    networks:
+      - ecommerce-net
+
+  remote-app:
+    build:
+      context: ./frontend/remote-app
+    container_name: remote-app
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    networks:
+      - ecommerce-net
+
+  gateway:
+    image: nginx:stable-alpine
+    container_name: ecommerce-gateway
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT}:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - user-service
+      - product-service
+      - host-app
+      - remote-app
+    networks:
+      - ecommerce-net
+
+volumes:
+  mysql_data:
+  mongo_data:
+  redis_data:
+
+networks:
+  ecommerce-net:
+    driver: bridge
