@@ -8,7 +8,9 @@
   },
   "dependencies": {
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "react-redux": "^9.2.0",
+    "@reduxjs/toolkit": "^2.8.2"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

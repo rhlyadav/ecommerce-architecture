@@ -44,8 +44,8 @@ module.exports = {
       shared: {
         react: { singleton: true, requiredVersion: "18.2.0" },
         "react-dom": { singleton: true, requiredVersion: "18.2.0" },
-        "react-redux": { singleton: true },
-        "@reduxjs/toolkit": { singleton: true }
+        "react-redux": { singleton: true, requiredVersion: "^9.2.0" },
+        "@reduxjs/toolkit": { singleton: true, requiredVersion: "^2.8.2" }
       }
     }),
     new HtmlWebpackPlugin({
