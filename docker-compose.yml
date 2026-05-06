@@ -62,10 +62,14 @@ services:
     environment:
       PORT: 4001
       DATABASE_URL: mysql://user:userpass@mysql:3306/userdb
+      REDIS_URL: redis://redis:6379
+      PRODUCT_EVENTS_CHANNEL: product-events
     ports:
       - "4001:4001"
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - ecommerce-net
@@ -78,10 +82,14 @@ services:
     environment:
       PORT: 4002
       MONGO_URL: mongodb://mongodb:27017/productdb
+      REDIS_URL: redis://redis:6379
+      PRODUCT_EVENTS_CHANNEL: product-events
     ports:
       - "4002:4002"
     depends_on:
       mongodb:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - ecommerce-net

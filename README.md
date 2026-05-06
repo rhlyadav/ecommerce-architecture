@@ -118,11 +118,25 @@ From project root:
 docker compose up -d mysql mongodb redis
 ```
 
-### 2. Start user-service locally
+### 2. Install service dependencies
+
+If you have not installed dependencies after pulling the latest changes:
+
+```bash
+cd services/user-service
+npm install
+
+cd ../product-service
+npm install
+```
+
+### 3. Start user-service locally
 
 ```bash
 cd services/user-service
 set DATABASE_URL=mysql://user:userpass@localhost:3306/userdb
+set REDIS_URL=redis://localhost:6379
+set PRODUCT_EVENTS_CHANNEL=product-events
 npm run prisma:push
 npm run dev
 ```
@@ -135,11 +149,13 @@ Health check:
 http://localhost:4001/health
 ```
 
-### 3. Start product-service locally
+### 4. Start product-service locally
 
 ```bash
 cd services/product-service
 set MONGO_URL=mongodb://localhost:27017/productdb
+set REDIS_URL=redis://localhost:6379
+set PRODUCT_EVENTS_CHANNEL=product-events
 npm run dev
 ```
 
@@ -151,7 +167,7 @@ Health check:
 http://localhost:4002/health
 ```
 
-### 4. Start remote-app locally
+### 5. Start remote-app locally
 
 ```bash
 cd frontend/remote-app
@@ -160,7 +176,7 @@ npm run dev
 
 Runs at `http://localhost:3001`
 
-### 5. Start host-app locally
+### 6. Start host-app locally
 
 ```bash
 cd frontend/host-app
@@ -174,9 +190,42 @@ Runs at `http://localhost:3000`
 - Host app: `http://localhost:3000`
 - Remote app: `http://localhost:3001`
 - User API: `http://localhost:4001/api/users`
+- User activity API: `http://localhost:4001/api/users/activity`
 - Product API: `http://localhost:4002/api/products`
 - User health: `http://localhost:4001/health`
 - Product health: `http://localhost:4002/health`
+
+## Cross-Service Example
+
+This repo now includes a simple real event-driven microservice flow:
+
+- browser creates a product through `product-service`
+- `product-service` publishes a `product.created` event to Redis
+- `user-service` subscribes to that Redis channel and consumes the event
+- `user-service` stores the latest received product events in memory
+- `host-app` reads those events from `http://localhost:4001/api/users/activity`
+
+Flow:
+
+```text
+Browser -> product-service:4002/api/products
+product-service -> Redis channel:product-events
+Redis channel:product-events -> user-service
+Browser -> user-service:4001/api/users/activity
+```
+
+What you can test:
+
+1. Open `http://localhost:3000`
+2. Create a new product from the dashboard
+3. Watch the "Cross-service activity" section update
+
+What this demonstrates:
+
+- one microservice can publish an event without knowing another service URL
+- a broker can decouple the producer from the consumer
+- internal async communication can stay separate from public browser APIs
+- the frontend can display the result of backend-to-backend communication in a visible way
 
 ## Full Docker Mode
 

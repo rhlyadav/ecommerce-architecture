@@ -1,10 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const { createClient } = require("redis");
 
 const app = express();
 const port = process.env.PORT || 4002;
 const mongoUrl = process.env.MONGO_URL || "mongodb://mongodb:27017/productdb";
+const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const productEventsChannel = process.env.PRODUCT_EVENTS_CHANNEL || "product-events";
+const redisPublisher = createClient({ url: redisUrl });
 
 const productSchema = new mongoose.Schema(
   {
@@ -16,6 +20,23 @@ const productSchema = new mongoose.Schema(
 );
 
 const Product = mongoose.model("Product", productSchema);
+
+async function publishProductCreatedEvent(product) {
+  try {
+    await redisPublisher.publish(
+      productEventsChannel,
+      JSON.stringify({
+        type: "product.created",
+        productId: product._id.toString(),
+        name: product.name,
+        price: product.price,
+        createdAt: product.createdAt instanceof Date ? product.createdAt.toISOString() : new Date().toISOString()
+      })
+    );
+  } catch (error) {
+    console.error("Failed to publish product.created event", error);
+  }
+}
 
 app.use(cors());
 app.use(express.json());
@@ -39,6 +60,7 @@ app.post("/api/products", async (req, res) => {
   }
 
   const product = await Product.create({ name, price, description });
+  publishProductCreatedEvent(product);
   return res.status(201).json(product);
 });
 
@@ -56,6 +78,7 @@ async function seedProducts() {
 async function start() {
   try {
     await mongoose.connect(mongoUrl);
+    await redisPublisher.connect();
     await seedProducts();
 
     app.listen(port, () => {

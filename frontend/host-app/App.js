@@ -8,25 +8,37 @@ const defaultProductApi = browserConfig.productApiUrl || "http://localhost:4002/
 export default function App() {
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [activity, setActivity] = useState([]);
   const [userForm, setUserForm] = useState({ name: "", email: "" });
   const [productForm, setProductForm] = useState({ name: "", price: "", description: "" });
   const [message, setMessage] = useState("");
 
   const userApi = defaultUserApi;
   const productApi = defaultProductApi;
+  const activityApi = `${userApi}/activity`;
 
   async function loadData() {
-    const [usersRes, productsRes] = await Promise.all([fetch(userApi), fetch(productApi)]);
+    const [usersRes, productsRes, activityRes] = await Promise.all([fetch(userApi), fetch(productApi), fetch(activityApi)]);
     const usersJson = await usersRes.json();
     const productsJson = await productsRes.json();
+    const activityJson = await activityRes.json();
     setUsers(usersJson);
     setProducts(productsJson);
+    setActivity(activityJson);
   }
 
   useEffect(() => {
     loadData().catch((error) => {
       console.error("Failed to load dashboard data", error);
     });
+
+    const intervalId = window.setInterval(() => {
+      loadData().catch((error) => {
+        console.error("Failed to refresh dashboard data", error);
+      });
+    }, 4000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   async function handleUserSubmit(event) {
@@ -162,6 +174,36 @@ export default function App() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section style={{ marginTop: 24 }}>
+        <h2>Cross-service activity</h2>
+        <p style={{ marginTop: 0 }}>
+          When a product is created, `product-service` immediately notifies `user-service`, and the event appears here.
+        </p>
+        {activity.length === 0 ? (
+          <p>No product events received yet. Add a product to trigger service-to-service communication.</p>
+        ) : (
+          <div style={{ display: "grid", gap: 12 }}>
+            {activity.map((event) => (
+              <article
+                key={event.productId}
+                style={{
+                  border: "1px solid #d1d5db",
+                  borderRadius: 12,
+                  padding: 16,
+                  background: "#f8fafc"
+                }}
+              >
+                <strong>{event.name}</strong>
+                <p style={{ margin: "8px 0" }}>{event.summary}</p>
+                <small>
+                  Product ID: {event.productId} | Price: ${event.price} | Received: {new Date(event.receivedAt).toLocaleString()}
+                </small>
+              </article>
+            ))}
+          </div>
         )}
       </section>
 
