@@ -33,8 +33,8 @@ module.exports = {
   },
   plugins: [
     new webpack.DefinePlugin({
-      "process.env.USER_API_URL": JSON.stringify(process.env.USER_API_URL || "http://localhost:4001/api/users"),
-      "process.env.PRODUCT_API_URL": JSON.stringify(process.env.PRODUCT_API_URL || "http://localhost:4002/api/products")
+      "process.env.USER_API_BASE_URL": JSON.stringify(process.env.USER_API_BASE_URL || "http://localhost:4001/api"),
+      "process.env.PRODUCT_API_BASE_URL": JSON.stringify(process.env.PRODUCT_API_BASE_URL || "http://localhost:4002/api")
     }),
     new ModuleFederationPlugin({
       name: "hostApp",
@@ -43,7 +43,9 @@ module.exports = {
       },
       shared: {
         react: { singleton: true, requiredVersion: "18.2.0" },
-        "react-dom": { singleton: true, requiredVersion: "18.2.0" }
+        "react-dom": { singleton: true, requiredVersion: "18.2.0" },
+        "react-redux": { singleton: true },
+        "@reduxjs/toolkit": { singleton: true }
       }
     }),
     new HtmlWebpackPlugin({

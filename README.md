@@ -3,8 +3,10 @@
 React micro-frontend ecommerce demo with:
 
 - `host-app` in React + Webpack Module Federation
+- `Redux Toolkit` in the host shell for shared client state
+- `React Query` in the host shell for server-state fetching and cache invalidation
 - `remote-app` in React + Webpack Module Federation
-- `user-service` in Node.js + Prisma + MySQL
+- `user-service` in Node.js + Prisma + MySQL + JWT auth
 - `product-service` in Node.js + MongoDB
 - `gateway` in Nginx
 - `redis`, `mysql`, `mongodb` in Docker
@@ -31,6 +33,25 @@ This project is React-only on the frontend.
 - `services/user-service` runs on port `4001`
 - `services/product-service` runs on port `4002`
 - Docker is used for MySQL, MongoDB, and Redis
+
+## Auth And State Management
+
+This project now demonstrates a production-style microfrontend split:
+
+- `Redux Toolkit` stores the JWT session in `host-app`
+- `React Query` owns API reads, background refresh, and mutation invalidation
+- `remote-app` stays presentational and receives product data from the host shell
+- `user-service` issues JWTs from `/api/auth/register` and `/api/auth/login`
+- `product-service` validates the same JWT before allowing product writes
+
+Protected routes:
+
+- `GET /api/users/activity`
+- `GET /api/auth/me`
+- `POST /api/users`
+- `POST /api/products`
+
+For local development, both services fall back to the same default secret. For a safer setup, define the same `JWT_SECRET` value for both `user-service` and `product-service`.
 
 In the current local development flow, the `gateway` service is ignored.
 
@@ -137,6 +158,7 @@ cd services/user-service
 set DATABASE_URL=mysql://user:userpass@localhost:3306/userdb
 set REDIS_URL=redis://localhost:6379
 set PRODUCT_EVENTS_CHANNEL=product-events
+set JWT_SECRET=replace-this-in-real-envs
 npm run prisma:push
 npm run dev
 ```
@@ -156,6 +178,7 @@ cd services/product-service
 set MONGO_URL=mongodb://localhost:27017/productdb
 set REDIS_URL=redis://localhost:6379
 set PRODUCT_EVENTS_CHANNEL=product-events
+set JWT_SECRET=replace-this-in-real-envs
 npm run dev
 ```
 
@@ -191,6 +214,9 @@ Runs at `http://localhost:3000`
 - Remote app: `http://localhost:3001`
 - User API: `http://localhost:4001/api/users`
 - User activity API: `http://localhost:4001/api/users/activity`
+- Auth register API: `http://localhost:4001/api/auth/register`
+- Auth login API: `http://localhost:4001/api/auth/login`
+- Auth me API: `http://localhost:4001/api/auth/me`
 - Product API: `http://localhost:4002/api/products`
 - User health: `http://localhost:4001/health`
 - Product health: `http://localhost:4002/health`

@@ -36,11 +36,17 @@ module.exports = {
       name: "remoteApp",
       filename: "remoteEntry.js",
       exposes: {
-        "./ProductCatalog": "./src/ProductCatalog"
+        "./ProductCatalog": "./src/ProductCatalog",
+        "./useSharedAuth": "./src/ProductCatalog",
+        "./useSharedUI": "./src/ProductCatalog",
+        "./SharedStoreProvider": "./src/ProductCatalog",
+        "./StateSharingDemo": "./src/StateSharingDemo"
       },
       shared: {
         react: { singleton: true, requiredVersion: "18.2.0" },
-        "react-dom": { singleton: true, requiredVersion: "18.2.0" }
+        "react-dom": { singleton: true, requiredVersion: "18.2.0" },
+        "react-redux": { singleton: true },
+        "@reduxjs/toolkit": { singleton: true }
       }
     }),
     new HtmlWebpackPlugin({

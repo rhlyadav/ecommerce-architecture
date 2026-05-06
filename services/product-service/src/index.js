@@ -5,6 +5,7 @@ const cors = require("cors");
 const { connectDatabase, getDatabaseStatus } = require("./db");
 const { Product, seedProducts } = require("./models");
 const { connectRedis, publishProductCreatedEvent } = require("./events");
+const { requireAuth } = require("./middleware");
 
 const app = express();
 const port = process.env.PORT || 4002;
@@ -30,7 +31,7 @@ app.get("/api/products", async (_req, res) => {
   }
 });
 
-app.post("/api/products", async (req, res) => {
+app.post("/api/products", requireAuth, async (req, res) => {
   try {
     const { name, price, description } = req.body;
 
