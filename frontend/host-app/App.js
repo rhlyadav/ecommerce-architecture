@@ -210,7 +210,7 @@ export default function App() {
       <section style={{ marginTop: 24 }}>
         <h2>Remote Catalog</h2>
         <Suspense fallback={<p>Loading remote catalog...</p>}>
-          <RemoteProductCatalog />
+          <RemoteProductCatalog items={products} />
         </Suspense>
       </section>
     </main>
