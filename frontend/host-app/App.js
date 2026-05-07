@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authActions, uiActions } from "./store";
 import { ApiError, createProduct, createUser, getCurrentUser, listActivity, listProducts, listUsers, login, register } from "./api";
+import Chat from "./Chat";
 
 const RemoteProductCatalog = React.lazy(() => import("remoteApp/ProductCatalog"));
 const RemoteStateSharingDemo = React.lazy(() => import("remoteApp/StateSharingDemo"));
@@ -454,6 +455,26 @@ function Dashboard() {
                 </article>
               ))}
             </div>
+          )}
+        </QuerySection>
+      </section>
+
+      <section style={{ marginTop: 24 }}>
+        <QuerySection
+          title="Direct Messages"
+          description="Two authenticated users can exchange realtime messages here through the dedicated chat-service."
+        >
+          {usersQuery.isLoading ? (
+            <p>Loading chat contacts...</p>
+          ) : usersQuery.error ? (
+            <p style={{ color: "#b91c1c" }}>{usersQuery.error.message}</p>
+          ) : (
+            <Chat
+              token={token}
+              currentUser={currentUser}
+              users={usersQuery.data || []}
+              showNotice={(message) => dispatch(uiActions.showNotice(message))}
+            />
           )}
         </QuerySection>
       </section>

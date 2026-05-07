@@ -1,4 +1,4 @@
-const { userApiBaseUrl, productApiBaseUrl } = require("./config");
+const { userApiBaseUrl, productApiBaseUrl, chatApiBaseUrl } = require("./config");
 
 class ApiError extends Error {
   constructor(message, status, data) {
@@ -84,6 +84,12 @@ function createUser(payload, token) {
   });
 }
 
+function listConversation(otherUserId, token) {
+  return requestJson(`${chatApiBaseUrl}/chat/conversations/${otherUserId}`, {
+    headers: buildHeaders(token)
+  });
+}
+
 module.exports = {
   ApiError,
   listProducts,
@@ -93,5 +99,6 @@ module.exports = {
   register,
   login,
   getCurrentUser,
-  createUser
+  createUser,
+  listConversation
 };

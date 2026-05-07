@@ -64,6 +64,11 @@ $processes = @(
     Log = Join-Path $logs "product-service.log"
   },
   @{
+    Workdir = Join-Path $root "services/chat-service"
+    Command = "set PORT=4003&& set MONGO_URL=mongodb://localhost:27017/chatdb&& npm run dev"
+    Log = Join-Path $logs "chat-service.log"
+  },
+  @{
     Workdir = Join-Path $root "frontend/remote-app"
     Command = "npm run dev"
     Log = Join-Path $logs "remote-app.log"
@@ -85,3 +90,4 @@ Write-Host "Host app: http://localhost:3000"
 Write-Host "Remote app: http://localhost:3001"
 Write-Host "User service: http://localhost:4001/health"
 Write-Host "Product service: http://localhost:4002/health"
+Write-Host "Chat service: http://localhost:4003/health"

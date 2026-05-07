@@ -94,19 +94,38 @@ services:
     networks:
       - ecommerce-net
 
+  chat-service:
+    build:
+      context: ./services/chat-service
+    container_name: chat-service
+    restart: unless-stopped
+    environment:
+      PORT: 4003
+      MONGO_URL: mongodb://mongodb:27017/chatdb
+    ports:
+      - "4003:4003"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ecommerce-net
+
   host-app:
     build:
       context: ./frontend/host-app
     container_name: host-app
     restart: unless-stopped
     environment:
-      USER_API_URL: http://localhost:8080/api/users
-      PRODUCT_API_URL: http://localhost:8080/api/products
+      USER_API_BASE_URL: http://localhost:8080/api/users
+      PRODUCT_API_BASE_URL: http://localhost:8080/api/products
+      CHAT_API_BASE_URL: http://localhost:8080/api/chat
+      CHAT_SOCKET_URL: http://localhost:8080
     ports:
       - "3000:3000"
     depends_on:
       - user-service
       - product-service
+      - chat-service
       - remote-app
     networks:
       - ecommerce-net
@@ -132,6 +151,7 @@ services:
     depends_on:
       - user-service
       - product-service
+      - chat-service
       - host-app
       - remote-app
     networks:
