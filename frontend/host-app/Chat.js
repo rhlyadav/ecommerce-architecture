@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMediaQuery } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { io } from "socket.io-client";
 import { listConversation } from "./api";
 import { chatSocketUrl } from "./config";
@@ -91,6 +93,9 @@ function appendMessage(messages, incomingMessage) {
 }
 
 export default function Chat({ token, currentUser, users, showNotice }) {
+  const theme = useTheme();
+  const isTabletOrDown = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const queryClient = useQueryClient();
   const [activeUserId, setActiveUserId] = useState(null);
   const [draft, setDraft] = useState("");
@@ -187,10 +192,30 @@ export default function Chat({ token, currentUser, users, showNotice }) {
   }
 
   return (
-    <section style={chatStyles.shell}>
-      <aside style={chatStyles.sidebar}>
+    <section
+      style={{
+        ...chatStyles.shell,
+        gridTemplateColumns: isTabletOrDown ? "1fr" : chatStyles.shell.gridTemplateColumns,
+        gap: isMobile ? 12 : chatStyles.shell.gap
+      }}
+    >
+      <aside
+        style={{
+          ...chatStyles.sidebar,
+          borderRight: isTabletOrDown ? 0 : chatStyles.sidebar.borderRight,
+          borderBottom: isTabletOrDown ? "1px solid #e2e8f0" : 0,
+          paddingRight: isTabletOrDown ? 0 : chatStyles.sidebar.paddingRight,
+          paddingBottom: isTabletOrDown ? 12 : 0
+        }}
+      >
         <h3 style={{ marginTop: 0 }}>People</h3>
-        <div style={{ display: "grid", gap: 10 }}>
+        <div
+          style={{
+            display: "grid",
+            gap: 10,
+            gridTemplateColumns: isMobile ? "1fr" : isTabletOrDown ? "repeat(2, minmax(0, 1fr))" : "1fr"
+          }}
+        >
           {activeUsers.map((user) => {
             const isActive = Number(user.id) === Number(activeUserId);
 
@@ -225,7 +250,7 @@ export default function Chat({ token, currentUser, users, showNotice }) {
         ) : !conversationQuery.data || conversationQuery.data.length === 0 ? (
           <p style={chatStyles.muted}>No messages yet. Start the conversation.</p>
         ) : (
-          <div style={chatStyles.messages}>
+          <div style={{ ...chatStyles.messages, maxHeight: isMobile ? 300 : chatStyles.messages.maxHeight }}>
             {conversationQuery.data.map((message) => {
               const isOwn = Number(message.senderId) === Number(currentUser?.id);
 
@@ -240,6 +265,7 @@ export default function Chat({ token, currentUser, users, showNotice }) {
                   <article
                     style={{
                       ...chatStyles.bubble,
+                      maxWidth: isMobile ? "92%" : chatStyles.bubble.maxWidth,
                       background: isOwn ? "#0f766e" : "rgba(226, 232, 240, 0.85)",
                       color: isOwn ? "#fff" : "#0f172a"
                     }}
@@ -256,7 +282,13 @@ export default function Chat({ token, currentUser, users, showNotice }) {
           </div>
         )}
 
-        <form onSubmit={handleSend} style={chatStyles.inputRow}>
+        <form
+          onSubmit={handleSend}
+          style={{
+            ...chatStyles.inputRow,
+            gridTemplateColumns: isMobile ? "1fr" : chatStyles.inputRow.gridTemplateColumns
+          }}
+        >
           <input
             placeholder={selectedUser ? `Write to ${selectedUser.name}` : "Choose a user"}
             value={draft}

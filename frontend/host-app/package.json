@@ -7,6 +7,10 @@
     "build": "webpack --mode production"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.0.1",
+    "@mui/material": "^9.0.1",
     "@reduxjs/toolkit": "^2.8.2",
     "@tanstack/react-query": "^5.75.7",
     "react": "18.2.0",

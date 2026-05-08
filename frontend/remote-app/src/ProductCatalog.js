@@ -1,5 +1,6 @@
 import React from "react";
 import { useSelector } from "react-redux";
+import { Alert, Box, Card, CardContent, Stack, Typography } from "@mui/material";
 
 // Shared state hook that remote can use
 export function useSharedAuth() {
@@ -25,27 +26,37 @@ export default function ProductCatalog({ items, title }) {
   ];
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
-      {title ? <p style={{ margin: 0, color: "#475569", fontWeight: 700, letterSpacing: 0.4 }}>{title}</p> : null}
-      {user && <p style={{ margin: 0, color: "#0f766e", fontSize: 14 }}>👋 Welcome {user.name}!</p>}
-
+    <Stack spacing={1.5}>
+      {title ? (
+        <Typography sx={{ m: 0, color: "#475569", fontWeight: 700, letterSpacing: 0.4 }} variant="subtitle2">
+          {title}
+        </Typography>
+      ) : null}
+      {user ? (
+        <Alert severity="success" sx={{ py: 0 }}>
+          Welcome {user.name}!
+        </Alert>
+      ) : null}
       {catalogItems.map((item) => (
-        <article
+        <Card
           key={item.id || item._id}
-          style={{
+          sx={{
             border: "1px solid rgba(15, 23, 42, 0.08)",
-            borderRadius: 18,
-            padding: 18,
+            borderRadius: "18px",
             background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)"
           }}
         >
-          <h3 style={{ margin: 0 }}>{item.name}</h3>
-          {"price" in item ? <div style={{ marginTop: 8, color: "#0f766e", fontWeight: 700 }}>${Number(item.price).toFixed(2)}</div> : null}
-          <p style={{ marginBottom: 0 }}>
-            {item.tag || item.description || "Shared product from host application"}
-          </p>
-        </article>
+          <CardContent sx={{ p: 2.25 }}>
+            <Typography variant="h6">{item.name}</Typography>
+            {"price" in item ? (
+              <Typography sx={{ mt: 1, color: "#0f766e", fontWeight: 700 }}>${Number(item.price).toFixed(2)}</Typography>
+            ) : null}
+            <Box component="p" sx={{ mb: 0 }}>
+              {item.tag || item.description || "Shared product from host application"}
+            </Box>
+          </CardContent>
+        </Card>
       ))}
-    </div>
+    </Stack>
   );
 }
