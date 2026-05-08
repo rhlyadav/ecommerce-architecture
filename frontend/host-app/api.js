@@ -1,4 +1,5 @@
 const { userApiBaseUrl, productApiBaseUrl, chatApiBaseUrl } = require("./config");
+const { apiClient } = require("./store");
 
 class ApiError extends Error {
   constructor(message, status, data) {
@@ -11,23 +12,30 @@ class ApiError extends Error {
 
 function buildHeaders(token, extraHeaders = {}) {
   return {
-    "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...extraHeaders
   };
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, options);
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  try {
+    const response = await apiClient.request({
+      url,
+      method: options.method || "GET",
+      headers: options.headers,
+      data: options.body
+    });
 
-  if (!response.ok) {
-    const message = data && (data.message || data.error) ? data.message || data.error : "Request failed";
-    throw new ApiError(message, response.status, data);
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      const data = error.response.data || null;
+      const message = data && (data.message || data.error) ? data.message || data.error : "Request failed";
+      throw new ApiError(message, error.response.status, data);
+    }
+
+    throw new ApiError(error.message || "Network request failed", 0, null);
   }
-
-  return data;
 }
 
 function listProducts() {
@@ -38,7 +46,7 @@ function createProduct(payload, token) {
   return requestJson(`${productApiBaseUrl}/products`, {
     method: "POST",
     headers: buildHeaders(token),
-    body: JSON.stringify(payload)
+    body: payload
   });
 }
 
@@ -58,7 +66,7 @@ function register(payload) {
   return requestJson(`${userApiBaseUrl}/auth/register`, {
     method: "POST",
     headers: buildHeaders(),
-    body: JSON.stringify(payload)
+    body: payload
   });
 }
 
@@ -66,7 +74,7 @@ function login(payload) {
   return requestJson(`${userApiBaseUrl}/auth/login`, {
     method: "POST",
     headers: buildHeaders(),
-    body: JSON.stringify(payload)
+    body: payload
   });
 }
 
@@ -80,7 +88,7 @@ function createUser(payload, token) {
   return requestJson(`${userApiBaseUrl}/users`, {
     method: "POST",
     headers: buildHeaders(token),
-    body: JSON.stringify(payload)
+    body: payload
   });
 }
 

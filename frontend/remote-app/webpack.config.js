@@ -46,7 +46,11 @@ module.exports = {
         react: { singleton: true, requiredVersion: "18.2.0" },
         "react-dom": { singleton: true, requiredVersion: "18.2.0" },
         "react-redux": { singleton: true, requiredVersion: "^9.2.0" },
-        "@reduxjs/toolkit": { singleton: true, requiredVersion: "^2.8.2" }
+        "@reduxjs/toolkit": { singleton: true, requiredVersion: "^2.8.2" },
+        "@mui/material": { singleton: true, requiredVersion: "^9.0.1" },
+        "@mui/icons-material": { singleton: true, requiredVersion: "^9.0.1" },
+        "@emotion/react": { singleton: true, requiredVersion: "^11.14.0" },
+        "@emotion/styled": { singleton: true, requiredVersion: "^11.14.1" }
       }
     }),
     new HtmlWebpackPlugin({
