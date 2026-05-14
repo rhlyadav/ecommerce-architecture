@@ -4,19 +4,32 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Box, Button, Card, CardContent, Chip, Divider, LinearProgress, Stack, TextField, Typography } from "@mui/material";
 import { authActions, uiActions } from "./store";
 import { ApiError, createProduct, createUser, getCurrentUser, listActivity, listProducts, listUsers, login, register } from "./api";
+import { productGraphqlUrl } from "./config";
 import Chat from "./Chat";
 
 const RemoteProductCatalog = React.lazy(() => import("remoteApp/ProductCatalog"));
-const RemoteStateSharingDemo = React.lazy(() => import("remoteApp/StateSharingDemo"));
+const RemoteGraphQLProductCatalog = React.lazy(() => import("remoteApp/GraphQLProductCatalog"));
+
+const initialUserForm = { name: "", email: "", password: "" };
+const initialProductForm = { name: "", price: "", description: "" };
+const defaultSidebarPanel = "feed";
+
+const queryKeys = {
+  me: (token) => ["auth", "me", token],
+  users: (token) => ["users", token],
+  products: ["products"],
+  activity: (token) => ["activity", token]
+};
 
 const shellStyles = {
   page: {
     minHeight: "100vh",
     color: "#0f172a",
-    background: "radial-gradient(circle at top left, #e0e7ff 0%, #f8fafc 42%, #eef2ff 100%)",
+    background: "linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)",
     fontFamily: "'Segoe UI', sans-serif",
     display: "grid",
-    gridTemplateRows: "72px 1fr auto"
+    gridTemplateRows: "64px 1fr auto",
+    overflowX: "hidden"
   },
   header: {
     position: "sticky",
@@ -25,29 +38,34 @@ const shellStyles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "0 clamp(12px, 3vw, 24px)",
+    gap: 12,
+    padding: "0 clamp(14px, 3vw, 32px)",
     borderBottom: "1px solid rgba(148, 163, 184, 0.25)",
-    background: "rgba(255,255,255,0.94)",
+    background: "rgba(255,255,255,0.92)",
     backdropFilter: "blur(12px)",
-    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)"
+    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.05)",
+    minWidth: 0
   },
   headerBrand: {
     fontWeight: 800,
-    fontSize: 18,
+    fontSize: "clamp(16px, 2.8vw, 22px)",
     display: "flex",
     alignItems: "center",
-    gap: 10
+    gap: 10,
+    minWidth: 0,
+    lineHeight: 1.1
   },
   headerBrandBadge: {
-    width: 28,
-    height: 28,
+    width: 34,
+    height: 34,
     borderRadius: 8,
     display: "grid",
     placeItems: "center",
-    background: "linear-gradient(135deg, #0f766e 0%, #115e59 100%)",
+    background: "#0f766e",
     color: "#ffffff",
     fontWeight: 800,
-    fontSize: 14
+    fontSize: 15,
+    flex: "0 0 auto"
   },
   headerMeta: {
     color: "#475569",
@@ -59,92 +77,164 @@ const shellStyles = {
   headerRight: {
     display: "flex",
     alignItems: "center",
-    gap: 12
+    gap: 12,
+    flexShrink: 0,
+    minWidth: 0
   },
   appBody: {
     display: "grid",
-    gridTemplateColumns: "260px minmax(0, 1fr)",
-    gap: 12,
-    padding: "14px 16px",
-    maxWidth: 1320,
+    gridTemplateColumns: "clamp(220px, 20vw, 260px) minmax(0, 1fr)",
+    alignItems: "start",
+    gap: 16,
+    padding: "16px clamp(12px, 2.5vw, 28px) 24px",
+    maxWidth: 1280,
     width: "100%",
     margin: "0 auto",
     boxSizing: "border-box",
+    minWidth: 0,
     "@media (max-width:1100px)": {
-      gridTemplateColumns: "220px minmax(0, 1fr)",
-      gap: 14
+      maxWidth: "100%"
     },
     "@media (max-width:900px)": {
       gridTemplateColumns: "1fr",
-      padding: "14px 12px"
+      padding: "12px"
     }
   },
   appBodyFull: {
     gridTemplateColumns: "minmax(0, 1fr)",
-    maxWidth: 1080
+    maxWidth: 1120
   },
   sidebar: {
-    borderRadius: 10,
+    borderRadius: 8,
     border: "1px solid rgba(148, 163, 184, 0.25)",
-    background: "rgba(255,255,255,0.94)",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
-    padding: 10,
-    display: "grid",
-    alignContent: "start",
-    gap: 6,
-    height: "fit-content",
+    background: "rgba(255,255,255,0.96)",
+    boxShadow: "0 8px 18px rgba(15, 23, 42, 0.04)",
+    padding: 12,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 8,
     position: "sticky",
-    top: 84,
+    top: 80,
+    zIndex: 10,
+    width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
     "@media (max-width:900px)": {
       position: "static",
-      top: "auto"
+      flexDirection: "row",
+      alignItems: "center",
+      overflowX: "auto",
+      scrollbarWidth: "thin",
+      padding: 8
     }
   },
   sidebarTitle: {
     margin: 0,
-    fontSize: 13,
+    padding: "2px 4px 8px",
+    fontSize: 12,
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: "#475569"
+    color: "#64748b",
+    "@media (max-width:900px)": {
+      display: "none"
+    }
   },
   sidebarItem: {
     border: "1px solid transparent",
     width: "100%",
+    minWidth: 0,
+    display: "block",
     textAlign: "left",
-    padding: "8px 10px",
+    padding: "10px 11px",
     borderRadius: 8,
     background: "transparent",
     color: "#334155",
     fontWeight: 700,
     fontSize: 13,
     cursor: "pointer",
-    transition: "all 0.2s ease"
+    transition: "background 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+    boxSizing: "border-box",
+    "&:hover": {
+      background: "rgba(15, 118, 110, 0.08)",
+      borderColor: "rgba(15, 118, 110, 0.18)"
+    },
+    "@media (max-width:900px)": {
+      flex: "0 0 auto",
+      width: "auto",
+      minWidth: 148
+    },
+    "@media (max-width:520px)": {
+      minWidth: 138,
+      padding: "9px 10px"
+    }
   },
   sidebarItemLabel: {
     display: "block",
     fontSize: 13,
-    fontWeight: 700
+    fontWeight: 700,
+    whiteSpace: "normal",
+    overflowWrap: "normal",
+    wordBreak: "normal"
   },
   sidebarItemHint: {
     display: "block",
     marginTop: 2,
     fontSize: 11,
     color: "#64748b",
-    fontWeight: 500
+    fontWeight: 500,
+    lineHeight: 1.2,
+    whiteSpace: "normal",
+    overflowWrap: "normal",
+    wordBreak: "normal"
   },
   sidebarItemActive: {
-    background: "rgba(15, 118, 110, 0.12)",
+    background: "rgba(15, 118, 110, 0.1)",
     color: "#0f766e",
-    borderColor: "rgba(15, 118, 110, 0.3)"
+    borderColor: "rgba(15, 118, 110, 0.3)",
+    boxShadow: "inset 3px 0 0 #0f766e",
+    "@media (max-width:900px)": {
+      boxShadow: "inset 0 -3px 0 #0f766e"
+    }
   },
   content: {
     minWidth: 0,
+    width: "100%",
     display: "grid",
-    gap: 12
+    gap: 14
   },
   dashboardLayout: {
     display: "grid",
-    gap: 12
+    gap: 14,
+    minWidth: 0
+  },
+  overviewGrid: {
+    display: "grid",
+    gridTemplateColumns: "minmax(320px, 1fr) minmax(240px, 300px)",
+    gap: 16,
+    alignItems: "start",
+    minWidth: 0,
+    "@media (max-width:1100px)": {
+      gridTemplateColumns: "1fr"
+    }
+  },
+  overviewMeta: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    minWidth: 250,
+    maxWidth: 300,
+    padding: 12,
+    borderRadius: 8,
+    background: "#f8fafc",
+    border: "1px solid rgba(148, 163, 184, 0.22)",
+    boxSizing: "border-box",
+    minWidth: 0,
+    width: "100%",
+    "@media (max-width:1100px)": {
+      minWidth: 0,
+      maxWidth: "none"
+    }
   },
   authContainer: {
     minHeight: "calc(100vh - 190px)",
@@ -158,6 +248,7 @@ const shellStyles = {
     gridTemplateColumns: "minmax(0, 1fr) minmax(360px, 440px)",
     gap: 20,
     alignItems: "center",
+    minWidth: 0,
     "@media (max-width:900px)": {
       gridTemplateColumns: "1fr",
       gap: 18
@@ -166,7 +257,8 @@ const shellStyles = {
   authIntro: {
     display: "grid",
     gap: 12,
-    maxWidth: 560
+    maxWidth: 560,
+    minWidth: 0
   },
   authEyebrow: {
     margin: 0,
@@ -180,7 +272,8 @@ const shellStyles = {
     display: "flex",
     flexWrap: "wrap",
     gap: 10,
-    marginTop: 8
+    marginTop: 8,
+    minWidth: 0
   },
   authTrustPill: {
     fontSize: 13,
@@ -201,6 +294,7 @@ const shellStyles = {
     padding: "22px 20px",
     overflow: "hidden",
     boxSizing: "border-box",
+    minWidth: 0,
     "@media (max-width:900px)": {
       justifySelf: "stretch",
       maxWidth: "100%"
@@ -213,36 +307,47 @@ const shellStyles = {
     justifyContent: "center",
     color: "#475569",
     fontSize: 13,
-    background: "rgba(255,255,255,0.8)"
+    background: "rgba(255,255,255,0.8)",
+    minHeight: 42,
+    padding: "8px 12px",
+    textAlign: "center"
   },
   hero: {
     display: "grid",
     gap: 16,
-    gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 0.9fr)",
+    gridTemplateColumns: "minmax(0, 1.35fr) minmax(min(100%, 320px), 0.9fr)",
     alignItems: "stretch",
     "@media (max-width:1100px)": {
       gridTemplateColumns: "1fr"
     }
   },
   panel: {
-    background: "rgba(255, 255, 255, 0.9)",
-    border: "1px solid rgba(15, 23, 42, 0.06)",
-    borderRadius: 10,
-    boxShadow: "0 10px 20px rgba(15, 23, 42, 0.06)",
-    padding: 18,
-    backdropFilter: "blur(10px)"
+    background: "#ffffff",
+    border: "1px solid rgba(148, 163, 184, 0.24)",
+    borderRadius: "8px !important",
+    boxShadow: "0 8px 22px rgba(15, 23, 42, 0.05)",
+    padding: { xs: 14, sm: 18 },
+    overflow: "hidden",
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box"
   },
   stats: {
     display: "grid",
     gap: 12,
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    marginTop: 12
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+    "@media (max-width:760px)": {
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))"
+    },
+    "@media (max-width:560px)": {
+      gridTemplateColumns: "1fr"
+    }
   },
   cards: {
     display: "grid",
     gap: 14,
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    marginTop: 12
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
+    minWidth: 0
   },
   input: {
     width: "100%",
@@ -266,34 +371,41 @@ const shellStyles = {
   },
   button: {
     border: 0,
-    borderRadius: 10,
+    borderRadius: 8,
     padding: "12px 18px",
     cursor: "pointer",
     background: "linear-gradient(135deg, #0f766e 0%, #0f766e 45%, #0b615a 100%)",
     color: "#fff",
     fontWeight: 700,
-    boxShadow: "0 8px 16px rgba(15, 118, 110, 0.28)"
+    boxShadow: "0 8px 16px rgba(15, 118, 110, 0.28)",
+    minWidth: 0,
+    whiteSpace: "normal"
   },
   secondaryButton: {
     border: "1px solid rgba(15, 118, 110, 0.7)",
-    borderRadius: 10,
-    padding: "12px 18px",
+    borderRadius: 8,
+    padding: "10px 16px",
     cursor: "pointer",
     background: "#ffffff",
     color: "#0f766e",
-    fontWeight: 700
+    fontWeight: 700,
+    whiteSpace: "nowrap"
   },
   muted: {
     color: "#475569"
   },
   form: {
     display: "grid",
-    gap: 12
+    gap: 12,
+    minWidth: 0
   },
   quickActions: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 10
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+    gap: 10,
+    "@media (max-width:700px)": {
+      gridTemplateColumns: "1fr"
+    }
   },
   segmentedControl: {
     display: "grid",
@@ -345,13 +457,14 @@ function DashboardStat({ label, value, tone }) {
     <Card
       sx={{
         ...shellStyles.panel,
-        padding: 18,
-        background: tone || "rgba(255, 255, 255, 0.78)"
+        padding: { xs: 12, sm: 14 },
+        background: tone || "#ffffff",
+        minHeight: 94
       }}
     >
       <CardContent sx={{ p: 0 }}>
-        <Typography sx={{ fontSize: 13, color: "#475569", textTransform: "uppercase", letterSpacing: 1.1 }}>{label}</Typography>
-        <Typography sx={{ fontSize: 34, fontWeight: 800, mt: 1 }}>{value}</Typography>
+        <Typography sx={{ fontSize: 12, color: "#475569", textTransform: "uppercase", letterSpacing: 0.8 }}>{label}</Typography>
+        <Typography sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 800, mt: 0.5, lineHeight: 1 }}>{value}</Typography>
       </CardContent>
     </Card>
   );
@@ -484,10 +597,10 @@ function AuthScreen() {
 function QuerySection({ title, description, children }) {
   return (
     <Card sx={shellStyles.panel}>
-      <Typography variant="h5" sx={{ mt: 0 }}>
+      <Typography variant="h5" sx={{ mt: 0, fontSize: { xs: 20, sm: 22 }, fontWeight: 800, lineHeight: 1.2 }}>
         {title}
       </Typography>
-      {description ? <Typography sx={{ ...shellStyles.muted, mt: 0 }}>{description}</Typography> : null}
+      {description ? <Typography sx={{ ...shellStyles.muted, mt: 0.5, mb: 2, fontSize: 14 }}>{description}</Typography> : null}
       {children}
     </Card>
   );
@@ -499,39 +612,40 @@ function Dashboard() {
   const token = useSelector((state) => state.auth.token);
   const currentUser = useSelector((state) => state.auth.user);
   const notice = useSelector((state) => state.ui.notice);
-  const [userForm, setUserForm] = useState({ name: "", email: "", password: "" });
-  const [productForm, setProductForm] = useState({ name: "", price: "", description: "" });
-  const [activeSidebarPanel, setActiveSidebarPanel] = useState("feed");
+  const [userForm, setUserForm] = useState(initialUserForm);
+  const [productForm, setProductForm] = useState(initialProductForm);
+  const [activeSidebarPanel, setActiveSidebarPanel] = useState(defaultSidebarPanel);
+  const hasToken = Boolean(token);
+  const isActivityPanelOpen = activeSidebarPanel === "activity";
 
   const meQuery = useQuery({
-    queryKey: ["auth", "me", token],
+    queryKey: queryKeys.me(token),
     queryFn: () => getCurrentUser(token),
-    enabled: Boolean(token),
+    enabled: hasToken,
     retry: false
   });
 
   const usersQuery = useQuery({
-    queryKey: ["users", token],
+    queryKey: queryKeys.users(token),
     queryFn: () => listUsers(token),
-    enabled: Boolean(token)
+    enabled: hasToken
   });
 
   const productsQuery = useQuery({
-    queryKey: ["products"],
+    queryKey: queryKeys.products,
     queryFn: listProducts
   });
 
   const activityQuery = useQuery({
-    queryKey: ["activity", token],
+    queryKey: queryKeys.activity(token),
     queryFn: () => listActivity(token),
-    enabled: Boolean(token),
-    refetchInterval: 5000
+    enabled: hasToken && isActivityPanelOpen
   });
 
   const createUserMutation = useMutation({
     mutationFn: (payload) => createUser(payload, token),
     onSuccess: () => {
-      setUserForm({ name: "", email: "", password: "" });
+      setUserForm(initialUserForm);
       dispatch(uiActions.showNotice("New user provisioned successfully."));
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
@@ -543,9 +657,9 @@ function Dashboard() {
   const createProductMutation = useMutation({
     mutationFn: (payload) => createProduct(payload, token),
     onSuccess: () => {
-      setProductForm({ name: "", price: "", description: "" });
+      setProductForm(initialProductForm);
       dispatch(uiActions.showNotice("Product created and event published."));
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products });
       queryClient.invalidateQueries({ queryKey: ["activity"] });
     },
     onError: (error) => {
@@ -598,8 +712,8 @@ function Dashboard() {
     { key: "users", label: "Users", hint: "Manage workspace members" },
     { key: "activity", label: "Activity", hint: "Cross-service events" },
     { key: "products", label: "Products", hint: "Create catalog items" },
+    { key: "graphql", label: "GraphQL", hint: "Remote schema client" },
     { key: "chat", label: "Chat", hint: "Realtime messaging" },
-    { key: "state", label: "Shared State", hint: "Redux federation demo" }
   ];
 
   return (
@@ -614,15 +728,19 @@ function Dashboard() {
       sidebar={
         <>
           {dashboardSections.map((section) => (
-            <button
+            <Box
+              component="button"
               key={section.key}
               type="button"
               onClick={() => setActiveSidebarPanel(section.key)}
-              style={{ ...shellStyles.sidebarItem, ...(activeSidebarPanel === section.key ? shellStyles.sidebarItemActive : {}) }}
+              sx={{
+                ...shellStyles.sidebarItem,
+                ...(activeSidebarPanel === section.key ? shellStyles.sidebarItemActive : {})
+              }}
             >
               <span style={shellStyles.sidebarItemLabel}>{section.label}</span>
               <span style={shellStyles.sidebarItemHint}>{section.hint}</span>
-            </button>
+            </Box>
           ))}
         </>
       }
@@ -638,44 +756,49 @@ function Dashboard() {
           <>
           <Card sx={shellStyles.panel}>
             <CardContent sx={{ p: 0 }}>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "flex-start", sm: "center" }} justifyContent="space-between">
+              <Box sx={shellStyles.overviewGrid}>
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: -0.4 }}>
-                    Operations overview
+                  <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: 0, lineHeight: 1.15, fontSize: { xs: 24, md: 30 } }}>
+                    Dashboard
                   </Typography>
-                  <Typography sx={{ ...shellStyles.muted, mt: 0.5 }}>
-                    Track users, products, and service activity from one dashboard.
+                  <Typography sx={{ ...shellStyles.muted, mt: 0.75, fontSize: { xs: 14, sm: 15 }, maxWidth: 620 }}>
+                    Manage users, product data, GraphQL catalog actions, and realtime chat from one workspace.
+                  </Typography>
+                  <Box sx={{ ...shellStyles.quickActions, mt: 2 }}>
+                    <Button size="small" variant="contained" onClick={() => setActiveSidebarPanel("users")} sx={{ minHeight: 38 }}>
+                      Add user
+                    </Button>
+                    <Button size="small" variant="outlined" onClick={() => setActiveSidebarPanel("products")} sx={{ minHeight: 38 }}>
+                      Create product
+                    </Button>
+                    <Button size="small" variant="outlined" onClick={() => setActiveSidebarPanel("chat")} sx={{ minHeight: 38 }}>
+                      Open chat
+                    </Button>
+                  </Box>
+                </Box>
+                <Box sx={shellStyles.overviewMeta}>
+                  <Chip
+                    label={currentUser ? `Signed in as ${currentUser.name}` : "Profile syncing..."}
+                    color="success"
+                    variant="outlined"
+                    sx={{ justifySelf: "start" }}
+                  />
+                  <Typography sx={{ color: "#475569", fontSize: 14 }}>
+                    Activity calls are paused until you open the Activity panel.
                   </Typography>
                 </Box>
-                <Chip
-                  label={currentUser ? `Signed in as ${currentUser.name}` : "Profile syncing..."}
-                  color="success"
-                  variant="outlined"
-                />
-              </Stack>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={shellStyles.quickActions}>
-                <Button size="small" variant="outlined" onClick={() => setActiveSidebarPanel("users")}>
-                  Add user
-                </Button>
-                <Button size="small" variant="outlined" onClick={() => setActiveSidebarPanel("products")}>
-                  Create product
-                </Button>
-                <Button size="small" variant="outlined" onClick={() => setActiveSidebarPanel("chat")}>
-                  Open chat
-                </Button>
               </Box>
               {(usersQuery.isLoading || productsQuery.isLoading || activityQuery.isLoading) ? <LinearProgress sx={{ mt: 2 }} /> : null}
             </CardContent>
           </Card>
 
-          <section style={shellStyles.stats}>
+          <Box component="section" sx={shellStyles.stats}>
             <DashboardStat label="Users" value={counts.users} tone="rgba(224, 242, 254, 0.9)" />
             <DashboardStat label="Products" value={counts.products} tone="rgba(254, 243, 199, 0.9)" />
             <DashboardStat label="Events" value={counts.activity} tone="rgba(220, 252, 231, 0.9)" />
-          </section>
+          </Box>
 
-          <section style={{ marginTop: 14 }}>
+          <section>
             <QuerySection title="Product Details Feed" description="Default feed showing live product details from host state.">
               {productsQuery.isLoading ? (
                 <p>Loading products...</p>
@@ -693,7 +816,7 @@ function Dashboard() {
 
         {activeSidebarPanel === "users" ? (
           <>
-          <section style={shellStyles.cards}>
+          <Box component="section" sx={shellStyles.cards}>
             <QuerySection
               title="Invite User"
               description="Protected mutation through user-service. This demonstrates Redux-provided auth state flowing into React Query mutations."
@@ -731,9 +854,9 @@ function Dashboard() {
                 </button>
               </form>
             </QuerySection>
-          </section>
+          </Box>
 
-          <section style={{ marginTop: 14 }}>
+          <section>
             <QuerySection title="Users from user-service">
               {usersQuery.isLoading ? (
                 <p>Loading users...</p>
@@ -757,7 +880,7 @@ function Dashboard() {
         ) : null}
 
         {activeSidebarPanel === "activity" ? (
-          <section style={{ marginTop: 14 }}>
+          <section>
             <QuerySection title="Cross-service activity">
               {activityQuery.isLoading ? (
                 <p>Loading event stream...</p>
@@ -781,7 +904,7 @@ function Dashboard() {
         ) : null}
 
         {activeSidebarPanel === "products" ? (
-          <section style={{ marginTop: 14 }}>
+          <section>
             <QuerySection
               title="Create Product"
               description="Protected write to product-service. Successful creation still publishes an event to Redis for user-service activity."
@@ -825,8 +948,21 @@ function Dashboard() {
           </section>
         ) : null}
 
+        {activeSidebarPanel === "graphql" ? (
+          <section>
+            <QuerySection
+              title="GraphQL Catalog"
+              description="This panel is owned by the remote child app and talks to product-service through its GraphQL endpoint."
+            >
+              <Suspense fallback={<p>Loading GraphQL catalog...</p>}>
+                <RemoteGraphQLProductCatalog endpoint={productGraphqlUrl} />
+              </Suspense>
+            </QuerySection>
+          </section>
+        ) : null}
+
         {activeSidebarPanel === "chat" ? (
-          <section style={{ marginTop: 14 }}>
+          <section>
             <QuerySection
               title="Direct Messages"
               description="Two authenticated users can exchange realtime messages here through the dedicated chat-service."
@@ -843,16 +979,6 @@ function Dashboard() {
                   showNotice={(message) => dispatch(uiActions.showNotice(message))}
                 />
               )}
-            </QuerySection>
-          </section>
-        ) : null}
-
-        {activeSidebarPanel === "state" ? (
-          <section style={{ marginTop: 14 }}>
-            <QuerySection title="State Sharing Demo" description="Remote component accessing shared Redux state directly from host.">
-              <Suspense fallback={<p>Loading state sharing demo...</p>}>
-                <RemoteStateSharingDemo />
-              </Suspense>
             </QuerySection>
           </section>
         ) : null}

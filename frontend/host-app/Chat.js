@@ -9,22 +9,27 @@ import { chatSocketUrl } from "./config";
 const chatStyles = {
   shell: {
     display: "grid",
-    gridTemplateColumns: "280px minmax(0, 1fr)",
+    gridTemplateColumns: "minmax(220px, 280px) minmax(0, 1fr)",
     gap: 18,
-    minHeight: 420
+    minHeight: 420,
+    width: "100%",
+    minWidth: 0
   },
   sidebar: {
     borderRight: "1px solid #e2e8f0",
-    paddingRight: 18
+    paddingRight: 18,
+    minWidth: 0
   },
   userButton: {
     width: "100%",
+    minWidth: 0,
     textAlign: "left",
     border: "1px solid #dbe4f0",
-    borderRadius: 16,
+    borderRadius: 8,
     padding: "12px 14px",
     background: "#fff",
-    cursor: "pointer"
+    cursor: "pointer",
+    overflowWrap: "anywhere"
   },
   activeUserButton: {
     background: "#0f766e",
@@ -37,20 +42,23 @@ const chatStyles = {
     alignContent: "start",
     maxHeight: 360,
     overflowY: "auto",
-    paddingRight: 6
+    paddingRight: 6,
+    minWidth: 0
   },
   bubble: {
     maxWidth: "78%",
     padding: "12px 14px",
-    borderRadius: 18,
+    borderRadius: 8,
     lineHeight: 1.45,
-    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)"
+    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)",
+    overflowWrap: "anywhere"
   },
   inputRow: {
     display: "grid",
     gridTemplateColumns: "1fr auto",
     gap: 12,
-    marginTop: 16
+    marginTop: 16,
+    minWidth: 0
   },
   input: {
     width: "100%",
@@ -68,7 +76,8 @@ const chatStyles = {
     cursor: "pointer",
     background: "#0f766e",
     color: "#fff",
-    fontWeight: 700
+    fontWeight: 700,
+    whiteSpace: "nowrap"
   },
   muted: {
     color: "#475569"
@@ -230,14 +239,14 @@ export default function Chat({ token, currentUser, users, showNotice }) {
                 }}
               >
                 <strong>{user.name}</strong>
-                <div style={{ opacity: isActive ? 0.9 : 0.7, marginTop: 4 }}>{user.email}</div>
+                <div style={{ opacity: isActive ? 0.9 : 0.7, marginTop: 4, overflowWrap: "anywhere" }}>{user.email}</div>
               </button>
             );
           })}
         </div>
       </aside>
 
-      <div>
+      <div style={{ minWidth: 0 }}>
         <h3 style={{ marginTop: 0 }}>{selectedUser ? `Chat with ${selectedUser.name}` : "Select a user"}</h3>
         <p style={{ ...chatStyles.muted, marginTop: 0 }}>
           Open a second browser window, sign in as another account, and messages will appear live for both users.

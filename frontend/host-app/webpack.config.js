@@ -35,6 +35,7 @@ module.exports = {
     new webpack.DefinePlugin({
       "process.env.USER_API_BASE_URL": JSON.stringify(process.env.USER_API_BASE_URL || "http://localhost:4001/api"),
       "process.env.PRODUCT_API_BASE_URL": JSON.stringify(process.env.PRODUCT_API_BASE_URL || "http://localhost:4002/api"),
+      "process.env.PRODUCT_GRAPHQL_URL": JSON.stringify(process.env.PRODUCT_GRAPHQL_URL || "http://localhost:4002/api/graphql"),
       "process.env.CHAT_API_BASE_URL": JSON.stringify(process.env.CHAT_API_BASE_URL || "http://localhost:4003/api"),
       "process.env.CHAT_SOCKET_URL": JSON.stringify(process.env.CHAT_SOCKET_URL || "http://localhost:4003")
     }),

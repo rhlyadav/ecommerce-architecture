@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import ProductCatalog from "./ProductCatalog";
-import StateSharingDemo from "./StateSharingDemo";
+import GraphQLProductCatalog from "./GraphQLProductCatalog";
 import theme from "./theme";
 
 // Cached state object to prevent react-redux infinite re-renders
@@ -38,7 +38,9 @@ function App() {
         <main style={{ fontFamily: "'Segoe UI', sans-serif", padding: "clamp(12px, 4vw, 24px)" }}>
           <h1>Remote Catalog Application (Standalone)</h1>
           <ProductCatalog title="Standalone Catalog" />
-          <StateSharingDemo />
+          <div style={{ marginTop: 24 }}>
+            <GraphQLProductCatalog title="Standalone GraphQL Catalog" />
+          </div>
         </main>
       </ThemeProvider>
     </Provider>

@@ -40,7 +40,7 @@ This project now demonstrates a production-style microfrontend split:
 
 - `Redux Toolkit` stores the JWT session in `host-app`
 - `React Query` owns API reads, background refresh, and mutation invalidation
-- `remote-app` stays presentational and receives product data from the host shell
+- `remote-app` can stay presentational for REST-fed views and can also own its own GraphQL product workflow
 - `user-service` issues JWTs from `/api/auth/register` and `/api/auth/login`
 - `product-service` validates the same JWT before allowing product writes
 
@@ -50,6 +50,7 @@ Protected routes:
 - `GET /api/auth/me`
 - `POST /api/users`
 - `POST /api/products`
+- `POST /api/graphql` mutation `createProduct`
 
 For local development, both services fall back to the same default secret. For a safer setup, define the same `JWT_SECRET` value for both `user-service` and `product-service`.
 
@@ -218,8 +219,56 @@ Runs at `http://localhost:3000`
 - Auth login API: `http://localhost:4001/api/auth/login`
 - Auth me API: `http://localhost:4001/api/auth/me`
 - Product API: `http://localhost:4002/api/products`
+- Product GraphQL API: `http://localhost:4002/api/graphql`
 - User health: `http://localhost:4001/health`
 - Product health: `http://localhost:4002/health`
+
+## GraphQL In The Micro-Frontend
+
+GraphQL is added where the product domain already lives:
+
+- Schema and resolvers: `services/product-service/src/graphql.js`
+- HTTP route: `POST /api/graphql`
+- Gateway-compatible route: `POST /api/products/graphql`
+- Remote child service: `frontend/remote-app/src/services/productGraphqlService.js`
+- Federated child component: `remoteApp/GraphQLProductCatalog`
+- Host composition point: the `GraphQL` sidebar panel in `frontend/host-app/App.js`
+
+The important split is:
+
+- `product-service` owns product data, schema, and mutations
+- `remote-app` owns the GraphQL client and UI workflow
+- `host-app` owns shell navigation and shared auth state
+- shared auth is read by the remote with `useSharedAuth()` and sent as a bearer token for protected GraphQL mutations
+
+Example query:
+
+```graphql
+query Products {
+  products {
+    id
+    name
+    price
+    description
+    createdAt
+  }
+}
+```
+
+Example protected mutation:
+
+```graphql
+mutation CreateProduct($input: CreateProductInput!) {
+  createProduct(input: $input) {
+    id
+    name
+    price
+    description
+  }
+}
+```
+
+In the app, sign in, open the `GraphQL` sidebar item, and use the remote child panel to query products or create a product through GraphQL.
 
 ## Cross-Service Example
 

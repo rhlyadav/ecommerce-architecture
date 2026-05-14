@@ -40,7 +40,7 @@ module.exports = {
         "./useSharedAuth": "./src/ProductCatalog",
         "./useSharedUI": "./src/ProductCatalog",
         "./SharedStoreProvider": "./src/ProductCatalog",
-        "./StateSharingDemo": "./src/StateSharingDemo"
+        "./GraphQLProductCatalog": "./src/GraphQLProductCatalog",
       },
       shared: {
         react: { singleton: true, requiredVersion: "18.2.0" },

@@ -17,7 +17,7 @@ export function SharedStoreProvider({ children }) {
 }
 
 export default function ProductCatalog({ items, title }) {
-  const { user, status } = useSharedAuth();
+  const { user } = useSharedAuth();
 
   const catalogItems = Array.isArray(items) && items.length > 0 ? items : [
     { id: 1, name: "Edge Sneakers", tag: "Remote module card" },
@@ -26,7 +26,7 @@ export default function ProductCatalog({ items, title }) {
   ];
 
   return (
-    <Stack spacing={1.5}>
+    <Stack spacing={1.5} sx={{ width: "100%", minWidth: 0 }}>
       {title ? (
         <Typography sx={{ m: 0, color: "#475569", fontWeight: 700, letterSpacing: 0.4 }} variant="subtitle2">
           {title}
@@ -37,26 +37,41 @@ export default function ProductCatalog({ items, title }) {
           Welcome {user.name}!
         </Alert>
       ) : null}
-      {catalogItems.map((item) => (
-        <Card
-          key={item.id || item._id}
-          sx={{
-            border: "1px solid rgba(15, 23, 42, 0.08)",
-            borderRadius: "18px",
-            background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)"
-          }}
-        >
-          <CardContent sx={{ p: 2.25 }}>
-            <Typography variant="h6">{item.name}</Typography>
-            {"price" in item ? (
-              <Typography sx={{ mt: 1, color: "#0f766e", fontWeight: 700 }}>${Number(item.price).toFixed(2)}</Typography>
-            ) : null}
-            <Box component="p" sx={{ mb: 0 }}>
-              {item.tag || item.description || "Shared product from host application"}
-            </Box>
-          </CardContent>
-        </Card>
-      ))}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
+          gap: 1.5,
+          width: "100%",
+          minWidth: 0
+        }}
+      >
+        {catalogItems.map((item) => (
+          <Card
+            key={item.id || item._id}
+            sx={{
+              border: "1px solid rgba(148, 163, 184, 0.28)",
+              borderRadius: "8px",
+              background: "#ffffff",
+              boxShadow: "0 6px 16px rgba(15, 23, 42, 0.04)",
+              height: "100%",
+              minWidth: 0
+            }}
+          >
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                {item.name}
+              </Typography>
+              {"price" in item ? (
+                <Typography sx={{ mt: 1, color: "#0f766e", fontWeight: 800 }}>${Number(item.price).toFixed(2)}</Typography>
+              ) : null}
+              <Box component="p" sx={{ mb: 0, color: "#475569", fontSize: 14, lineHeight: 1.45, overflowWrap: "anywhere" }}>
+                {item.tag || item.description || "Shared product from host application"}
+              </Box>
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
     </Stack>
   );
 }

@@ -6,6 +6,7 @@ const { connectDatabase, getDatabaseStatus } = require("./db");
 const { Product, seedProducts } = require("./models");
 const { connectRedis, publishProductCreatedEvent } = require("./events");
 const { requireAuth } = require("./middleware");
+const { handleGraphql } = require("./graphql");
 
 const app = express();
 const port = process.env.PORT || 4002;
@@ -30,6 +31,9 @@ app.get("/api/products", async (_req, res) => {
     res.status(500).json({ error: "Failed to fetch products" });
   }
 });
+
+app.post("/api/graphql", handleGraphql);
+app.post("/api/products/graphql", handleGraphql);
 
 app.post("/api/products", requireAuth, async (req, res) => {
   try {

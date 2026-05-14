@@ -118,6 +118,7 @@ services:
     environment:
       USER_API_BASE_URL: http://localhost:8080/api/users
       PRODUCT_API_BASE_URL: http://localhost:8080/api/products
+      PRODUCT_GRAPHQL_URL: http://localhost:8080/api/products/graphql
       CHAT_API_BASE_URL: http://localhost:8080/api/chat
       CHAT_SOCKET_URL: http://localhost:8080
     ports:
